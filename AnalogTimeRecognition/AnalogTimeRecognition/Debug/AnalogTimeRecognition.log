@@ -1,3 +1,1 @@
-﻿  AnalogTimeRecognition.cpp
-  AnalogTimeRecognition.vcxproj -> C:\Users\nutph\OneDrive\เอกสาร\Visual Studio 2015\Projects\AnalogClockTimeRecognition\AnalogTimeRecognition\Debug\AnalogTimeRecognition.exe
-  AnalogTimeRecognition.vcxproj -> C:\Users\nutph\OneDrive\เอกสาร\Visual Studio 2015\Projects\AnalogClockTimeRecognition\AnalogTimeRecognition\Debug\AnalogTimeRecognition.pdb (Full PDB)
+﻿Debug\AnalogTimeRecognition.obj : fatal error LNK1112: module machine type 'X86' conflicts with target machine type 'x64'

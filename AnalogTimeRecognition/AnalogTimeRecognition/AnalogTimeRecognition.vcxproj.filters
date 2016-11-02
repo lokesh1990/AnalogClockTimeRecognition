@@ -36,7 +36,7 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HoughTransform.h">
+    <ClInclude Include="Core\HoughTransform.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
   </ItemGroup>
@@ -47,7 +47,7 @@
     <ClCompile Include="AnalogTimeRecognition.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HoughTransform.cpp">
+    <ClCompile Include="Core\HoughTransform.cpp">
       <Filter>Source Files\Core</Filter>
     </ClCompile>
   </ItemGroup>

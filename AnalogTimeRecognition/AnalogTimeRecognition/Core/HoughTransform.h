@@ -6,15 +6,12 @@ namespace Core
 {
 	class HoughTransform
 	{
-	private:
-		HoughTransform *m_inst = nullptr;
-
 	protected:
 		HoughTransform();
 		~HoughTransform();
 
 	public:
-		static HoughTransform GetInstance();
+		static HoughTransform& GetInstance();
 		void ComputeHough(cv::Mat ipImg);
 	};
 }

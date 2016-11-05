@@ -39,6 +39,9 @@
     <ClInclude Include="Core\HoughTransform.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
+    <ClInclude Include="Core\ImageClass.h">
+      <Filter>Source Files\Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -48,6 +51,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Core\HoughTransform.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\ImageClass.cpp">
       <Filter>Source Files\Core</Filter>
     </ClCompile>
   </ItemGroup>

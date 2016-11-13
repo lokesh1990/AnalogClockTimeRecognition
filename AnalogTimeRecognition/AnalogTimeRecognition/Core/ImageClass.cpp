@@ -95,7 +95,7 @@ void ImageClass::extractClock()
 
 	std::vector<cv::Vec4i> handLines;
 
-	for (int i = 0; i < handLines.size; i++)
+	for (int i = 0; i < handLines.size(); i++)
 	{
 
 	}

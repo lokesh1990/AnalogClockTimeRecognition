@@ -10,8 +10,10 @@ namespace Core
 		HoughTransform();
 		~HoughTransform();
 
+		bool CheckCenterOnLine(cv::Vec4i line, cv::Point center);
+
 	public:
 		static HoughTransform& GetInstance();
-		void ComputeHough(cv::Mat ipImg);
+		std::vector<cv::Vec4i> ComputeHough(cv::Mat ipImg, cv::Point center);
 	};
 }

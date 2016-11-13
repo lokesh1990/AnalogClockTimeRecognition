@@ -35,15 +35,18 @@ void ImageClass::extractClock()
 	// resize image if it is large
 	int height = sourceImg.size().height;
 	int width = sourceImg.size().width;
-	
-	if (height > 1000)
+	cv::Mat processdImg;
+
+	if (height > 800 || width > 1000) 
 	{
+		cv::resize(sourceImg, processdImg, cv::Size(1000, 800));
+
 		// resize if needed using cv::resize
 		//cv::imwrite("resizedImage.jpg", sourceImg);
 	}
 
 	/// Reduce the noise so we avoid false circle detection
-	cv::GaussianBlur(sourceImg, sourceImg, sourceImg.size(), 2, 2);
+	cv::GaussianBlur(processdImg, sourceImg, sourceImg.size(), 2, 2);
 
 	std::vector<cv::Vec3f> circles;
 
@@ -61,7 +64,7 @@ void ImageClass::extractClock()
 	{
 		cv::Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
 		int radius = cvRound(circles[i][2]);
-		if (cvRound(circles[largestCircle][2]) < radius)
+		if (circles[largestCircle][2] < radius)
 			largestCircle = i;
 		cv::circle(imgCircles, center, 3, cv::Scalar(0, 255, 0), -1, 8, 0);// circle center     
 		cv::circle(imgCircles, center, radius, cv::Scalar(0, 0, 255), 3, 8, 0);// circle outline
@@ -82,9 +85,23 @@ void ImageClass::extractClock()
 
 	cv::imwrite("clockImage.jpg", clockImg);
 
-	sourceImg = clockImg.clone();
+	cv::cvtColor(clockImg, sourceImg, CV_BGR2GRAY);
+
+	//sourceImg = clockImg.clone();
 	cv::Canny(sourceImg, sourceImg, 50, 150);
 	cv::imwrite("cannyImage.jpg", sourceImg);
 
+	// do houghline transform
 
+	std::vector<cv::Vec4i> handLines;
+
+	for (int i = 0; i < handLines.size; i++)
+	{
+
+	}
+}
+
+int ImageClass::farthestPoint(cv::Point p1, cv::Point p2)
+{
+	if()
 }

@@ -101,7 +101,3 @@ void ImageClass::extractClock()
 	}
 }
 
-int ImageClass::farthestPoint(cv::Point p1, cv::Point p2)
-{
-	if()
-}

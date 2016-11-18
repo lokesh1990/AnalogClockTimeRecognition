@@ -22,6 +22,8 @@ HoughTransform& HoughTransform::GetInstance()
 
 std::vector<cv::Vec4i> Core::HoughTransform::ComputeHough(cv::Mat ipImg, cv::Point center)
 {
+	// find the hand lines 
+
 	//if (ipImg.channels() == 3)
 	//	cv::cvtColor(ipImg, ipImg, CV_BGR2GRAY);
 

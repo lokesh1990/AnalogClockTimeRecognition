@@ -25,6 +25,8 @@ ImageClass& ImageClass::GetInstance()
 
 void ImageClass::readImage()
 {
+	// read the image file
+
 	sourceImg = cv::imread(sourceFileName);
 	cv::cvtColor(sourceImg, sourceImg, CV_BGR2GRAY);
 	
@@ -48,6 +50,8 @@ void ImageClass::extractClock()
 	}
 	std::cout << "1";
 	/// Reduce the noise so we avoid false circle detection
+
+	// perform circle detection
 
 	//processdImg.copySize(sourceImg);
 	//cv::GaussianBlur(processdImg, sourceImg, sourceImg.size(), 2, 2);
@@ -80,6 +84,9 @@ void ImageClass::extractClock()
 
 		std::cout << circles[largestCircle].cols;
 		std::cout << circles[largestCircle].rows;
+
+		// find the largest circle
+		// TODO remove this? probably select all circles
 		if (circles[largestCircle][2] < radius)
 		{
 			largestCircle = i;
@@ -106,6 +113,10 @@ void ImageClass::extractClock()
 
 	cv::imwrite("clockImage.jpg", clockImg);
 
+
+	// perfrom canny edge detection
+	// for finding the lines in the circle
+
 	cv::cvtColor(clockImg, sourceImg, CV_BGR2GRAY);
 
 	//sourceImg = clockImg.clone();
@@ -114,7 +125,12 @@ void ImageClass::extractClock()
 	std::cout << "7";
 	// do houghline transform
 
+	// get the lines from the houghtransform class
+	// TODO call the HoughTransform ComputeHough method to find the lines
+	// detected inside the circle
 	std::vector<cv::Vec4i> handLines;
+	
+	
 	float lineAngles[handLines.size];
 	float diffX, diffY;
 
@@ -241,6 +257,7 @@ void ImageClass::extractClock()
 
 float ImageClass::euclideanDist(cv::Point p, cv::Point q)
 {
+	// computes the euclidean distance between 2 points
 	cv::Point diff = p - q;
 	return cv::sqrt(diff.x*diff.x + diff.y*diff.y);
 }

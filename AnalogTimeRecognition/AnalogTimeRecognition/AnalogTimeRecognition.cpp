@@ -7,6 +7,10 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+
+#include "Core/HoughTransform.h"
+#include "Core/ImageClass.h"
+
 // Don't import namespace, you might get functions which are common to both.
 //using namespace cv;
 //using namespace std;
@@ -19,6 +23,7 @@ int main(int argc, char** argv)
 	Create a new class in the core or helper class and write the functions there
 	We will merge then later.
 	*/
+	/*
 	cv::Mat src, src_gray;
 
 	/// Read the image
@@ -54,7 +59,11 @@ int main(int argc, char** argv)
 	/// Show your results
 	cv::namedWindow("Hough Circle Transform Demo", CV_WINDOW_AUTOSIZE);
 	imshow("Hough Circle Transform Demo", src);
+	*/
 
+	cv::Mat src, src_gray;
+	Core::ImageClass &im = Core::ImageClass::GetInstance();
+	im.extractClock();
 	cv::waitKey(0);
 	return 0;
 }

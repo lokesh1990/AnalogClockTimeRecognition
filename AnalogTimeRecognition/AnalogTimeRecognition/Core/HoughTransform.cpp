@@ -55,7 +55,7 @@ std::vector<cv::Vec4i> Core::HoughTransform::ComputeHough(cv::Mat ipImg, cv::Poi
 	for (size_t i = 0; i < lines.size(); i++)
 	{
 		if (CheckCenterOnLine(lines[i], center))
-			handLines.insert(lines[i]);
+			handLines.push_back(lines[i]);
 	}
 
 	return lines;

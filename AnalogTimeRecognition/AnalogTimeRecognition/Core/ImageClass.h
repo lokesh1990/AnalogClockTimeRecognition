@@ -14,6 +14,7 @@ namespace Core
 		std::string sourceFileName;
 
 		void readImage();
+		float euclideanDist(cv::Point p, cv::Point q);
 
 	public:
 		static ImageClass& GetInstance();

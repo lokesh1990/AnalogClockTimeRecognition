@@ -66,6 +66,8 @@ bool Core::HoughTransform::CheckCenterOnLine(cv::Vec4i line, cv::Point center)
 	double slope;
 	slope = (1.0 * (line[1] - line[3])) / (line[0] - line[2]);
 
+	if (slope == 0 || isnan(slope))
+		return false;
 	if (abs(line[1] - center.y) - (slope * (line[0] - center.x)) < 1)
 		return true;
 

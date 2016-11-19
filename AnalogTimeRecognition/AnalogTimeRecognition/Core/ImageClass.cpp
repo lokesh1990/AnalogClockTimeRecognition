@@ -1,11 +1,13 @@
 
 #include <iostream>
 #include "ImageClass.h"
+#include "HoughTransform.h"
 #include <opencv2\imgcodecs.hpp>
 #include <opencv2\imgproc.hpp>
 
 using namespace Core;
 
+using namespace std;
 ImageClass::ImageClass()
 {
 	sourceFileName = "clock.jpg";
@@ -48,7 +50,7 @@ void ImageClass::extractClock()
 		// resize if needed using cv::resize
 		//cv::imwrite("resizedImage.jpg", sourceImg);
 	}
-	std::cout << "1";
+
 	/// Reduce the noise so we avoid false circle detection
 
 	// perform circle detection
@@ -59,7 +61,6 @@ void ImageClass::extractClock()
 	//the third parameter of GaussianBlur is the window size of a Gaussian filter
 	//both height and width must be positive and odd.
 	cv::GaussianBlur(sourceImg, sourceImg, cv::Size(9, 9), 2, 2);
-	std::cout << "2";
 	
 	std::vector<cv::Vec3f> circles;
 	
@@ -69,36 +70,33 @@ void ImageClass::extractClock()
 				cvRound(MAX(sourceImg.size().height, sourceImg.size().width)*0.5));
 	
 
-
-	int largestCircle = -1;
+	//index can't be -1
+	int largestCircle = 0;
 	cv::Mat imgCircles;
 	sourceImg.copyTo(imgCircles);
-	cv::Point clockCenter;
+	//x and y of point are int so to make it more accurate with point2d
+	cv::Point2d clockCenter;
 
 	// Draw the circles detected
 	for (size_t i = 0; i < circles.size(); i++)
 	{
-		std::cout <<"6";
 		cv::Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
 		int radius = cvRound(circles[i][2]);
-
-		std::cout << circles[largestCircle].cols;
-		std::cout << circles[largestCircle].rows;
 
 		// find the largest circle
 		// TODO remove this? probably select all circles
 		if (circles[largestCircle][2] < radius)
 		{
-			largestCircle = i;
+			largestCircle = static_cast<int>(i);
 			clockCenter = center;
 		}
 		
 		cv::circle(imgCircles, center, 3, cv::Scalar(0, 255, 0), -1, 8, 0);// circle center     
 
-		std::cout << "6";
 		cv::circle(imgCircles, center, radius, cv::Scalar(0, 0, 255), 3, 8, 0);// circle outline
 		std::cout << "center : " << center << "\nradius : " << radius << std::endl;
 	}
+
 	// Show your results
 	cv::imwrite("allCirclesImage.jpg", imgCircles);
 
@@ -107,54 +105,62 @@ void ImageClass::extractClock()
 
 	cv::Mat clockImg;
 	cv::Mat mask = cv::Mat::zeros(sourceImg.rows, sourceImg.cols, CV_8UC1);
+	
+	//cvRound on (circles[largestCircle][2]) because of the conversion warning.
 	cv::circle(mask, cv::Point(cvRound(circles[largestCircle][0]), cvRound(circles[largestCircle][1])),
-							circles[largestCircle][2], cv::Scalar(255, 255, 255), -1, 8, 0); //-1 means filled
+		cvRound(circles[largestCircle][2]), cv::Scalar(255, 255, 255), -1, 8, 0); //-1 means filled
 	sourceImg.copyTo(clockImg, mask); // copy values of img to dst if mask is > 0.
 
 	cv::imwrite("clockImage.jpg", clockImg);
 
-
 	// perfrom canny edge detection
 	// for finding the lines in the circle
 
-	cv::cvtColor(clockImg, sourceImg, CV_BGR2GRAY);
+	//comment the error because your clockimage should have 3 or 4 channels before applying the function cv2.cvtColor
+	//actually you don't need to convert because it is already grayscale
+	//cv::cvtColor(clockImg, sourceImg, CV_BGR2GRAY);
 
 	//sourceImg = clockImg.clone();
-	cv::Canny(sourceImg, sourceImg, 50, 150);
+	cv::Canny(sourceImg, sourceImg, 50, 100);
 	cv::imwrite("cannyImage.jpg", sourceImg);
-	std::cout << "7";
+
 	// do houghline transform
 
 	// get the lines from the houghtransform class
 	// TODO call the HoughTransform ComputeHough method to find the lines
 	// detected inside the circle
-	std::vector<cv::Vec4i> handLines;
-	
-	
-	float lineAngles[handLines.size];
-	float diffX, diffY;
+	//add call houghtransform
+	Core::HoughTransform &ht = Core::HoughTransform::GetInstance();
+	//---change Vec4i to Vec4d--- to use 0.001 on line 155,157
+	std::vector<cv::Vec4d> handLines = ht.ComputeHough(sourceImg, clockCenter);
+	//end houghtransform
+
+	//add the initial size of lineAngles = handLines.size()
+	std::vector<double> lineAngles(handLines.size());
+	double diffX, diffY;
 
 	for (int i = 0; i < handLines.size(); i++)
 	{
 		//find the longest line segment from the center and discard the other one.
-		if (euclideanDist(cv::Point(handLines[i][0], handLines[i][1]), clockCenter) < euclideanDist(cv::Point(handLines[i][2], handLines[i][3]), clockCenter))
+		//x,y in point is int so use point2d instead
+		if (euclideanDist(cv::Point2d(handLines[i][0], handLines[i][1]), clockCenter) < euclideanDist(cv::Point2d(handLines[i][2], handLines[i][3]), clockCenter))
 		{
 			handLines[i][0] = handLines[i][2];
 			handLines[i][1] = handLines[i][3];
 		}
-
 		//handLines[i][0] -= clockCenter.x;
 		//handLines[i][1] -= clockCenter.y;
 		handLines[i][2] = clockCenter.x;
 		handLines[i][3] = clockCenter.y;
 
 		if(handLines[i][0] == clockCenter.x) 
-			handLines[i][0] += 0.001;
+			handLines[i][0] += 0.001f;
 		if (handLines[i][1] == clockCenter.y)
-			handLines[i][1] += 0.001;
+			handLines[i][1] += 0.001f;
 
 		// find angle and convert into radians
 		lineAngles[i] = atan2(handLines[i][1] - handLines[i][3], handLines[i][0] - handLines[i][2]);
+
 		lineAngles[i] = lineAngles[i] * 180 / CV_PI;
 
 		diffX = handLines[i][0] - clockCenter.x;
@@ -177,6 +183,7 @@ void ImageClass::extractClock()
 		{
 			lineAngles[i] = abs(lineAngles[i]) + 90;
 		}
+
 	}
 
 	
@@ -203,7 +210,7 @@ void ImageClass::extractClock()
 	}
 
 	std::vector<cv::Vec4i> selectedLines;
-	std::vector<float> selectedAngles;
+	std::vector<double> selectedAngles;
 
 	for (int i = 0; i < lineAngles.size()-1; i++)
 	{
@@ -226,9 +233,9 @@ void ImageClass::extractClock()
 	{
 		// do sorting here
 		int j = i;
-		
-		while (j > 0 && euclideanDist(cv::Point(handLines[j - 1][0], handLines[j - 1][1]), cv::Point(handLines[j - 1][2], handLines[j - 1][3]))
-		> euclideanDist(cv::Point(handLines[j][0], handLines[j][1]), cv::Point(handLines[j][2], handLines[j][3])))
+		//initial value of x,y on point is int. need point2d
+		while (j > 0 && euclideanDist(cv::Point2d(handLines[j - 1][0], handLines[j - 1][1]), cv::Point2d(handLines[j - 1][2], handLines[j - 1][3]))
+		> euclideanDist(cv::Point2d(handLines[j][0], handLines[j][1]), cv::Point2d(handLines[j][2], handLines[j][3])))
 		{
 			// swap
 			tmpVec = selectedLines[j];
@@ -253,12 +260,17 @@ void ImageClass::extractClock()
 	// if one line, assume second, hour and minute are same
 	// if 2 lines, then 2 of them are same
 	// if 3 lines easy case
+	if (selectedLines.size() > 2)
+	{
+
+	}
+
 }
 
-float ImageClass::euclideanDist(cv::Point p, cv::Point q)
+double ImageClass::euclideanDist(cv::Point2d p, cv::Point2d q)
 {
 	// computes the euclidean distance between 2 points
-	cv::Point diff = p - q;
+	cv::Point2d diff = p - q;
 	return cv::sqrt(diff.x*diff.x + diff.y*diff.y);
 }
 

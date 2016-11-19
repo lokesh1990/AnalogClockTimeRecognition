@@ -14,6 +14,6 @@ namespace Core
 		
 	public:
 		static HoughTransform& GetInstance();
-		std::vector<cv::Vec4i> ComputeHough(cv::Mat ipImg, cv::Point center);
+		std::vector<cv::Vec4d> ComputeHough(cv::Mat ipImg, cv::Point center);
 	};
 }

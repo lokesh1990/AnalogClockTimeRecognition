@@ -1,7 +1,7 @@
 #include "../stdafx.h"
 #include "HoughTransform.h"
 #include <opencv2/highgui.hpp>
-
+#include <iostream>
 using namespace Core;
 
 HoughTransform::HoughTransform()
@@ -19,40 +19,46 @@ HoughTransform& HoughTransform::GetInstance()
 
 	return m_inst;
 }
-
-std::vector<cv::Vec4i> Core::HoughTransform::ComputeHough(cv::Mat ipImg, cv::Point center)
+//change the return value from vector<Vec4i> to vector<Vec4f> to use 0.001 on imageclass
+std::vector<cv::Vec4d> Core::HoughTransform::ComputeHough(cv::Mat ipImg, cv::Point center)
 {
 	// find the hand lines 
 
 	//if (ipImg.channels() == 3)
 	//	cv::cvtColor(ipImg, ipImg, CV_BGR2GRAY);
 
-	std::vector<cv::Vec4i> lines;
+	std::vector<cv::Vec4d> lines;
 	// detect lines
 	//cv::HoughLines(ipImg, lines, 1, CV_PI / 180, 100); // 150);
 	int minLineLength = 30;
 	int maxLineGap = 10;
+
+	//there is the problem in some cases with clocks because the line size = 0.
 	cv::HoughLinesP(ipImg, lines, 1, CV_PI / 180, 80, minLineLength, maxLineGap); // 100, 100, 10
 
-	cv::Mat allLineImg = ipImg.clone();
+	//create new mat with the same size as ipImg and black background
+	cv::Mat allLineImg(ipImg.rows, ipImg.cols, CV_8UC3, cv::Scalar(0, 0, 0));
 
-	int xc, yc;
-
+	//unused
+	//int xc, yc;
+	std::cout <<"s:"<< lines.size() << std::endl;
 	for (size_t i = 0; i < lines.size(); i++)
 	{
 		//float rho = lines[i][0], theta = lines[i][1];
-		cv::Point pt1(lines[i][0], lines[i][1]), pt2(lines[i][2], lines[i][3]);
+		//change to point2d
+		cv::Point2d pt1(lines[i][0], lines[i][1]), pt2(lines[i][2], lines[i][3]);
 		//double a = cos(theta), b = sin(theta);
 		//double x0 = a*rho, y0 = b*rho;
 		//pt1.x = cvRound(x0 + 1000 * (-b));
 		//pt1.y = cvRound(y0 + 1000 * (a));
 		//pt2.x = cvRound(x0 - 1000 * (-b));
 		//pt2.y = cvRound(y0 - 1000 * (a));
-		cv::line(allLineImg, pt1, pt2, cv::Scalar(0, 0, 255), 3, CV_AA);
+		//white foreground
+		cv::line(allLineImg, pt1, pt2, cv::Scalar(255, 255, 255), 1, CV_AA);
 	}
 
 	cv::imwrite("allLines.jpg", allLineImg);
-	std::vector<cv::Vec4i> handLines;
+	std::vector<cv::Vec4d> handLines;
 
 	for (size_t i = 0; i < lines.size(); i++)
 	{

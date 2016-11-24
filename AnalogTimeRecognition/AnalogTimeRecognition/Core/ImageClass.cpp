@@ -29,9 +29,11 @@ void ImageClass::readImage()
 {
 	// read the image file
 
-	sourceImg = cv::imread(sourceFileName);
-	cv::cvtColor(sourceImg, sourceImg, CV_BGR2GRAY);
-	
+	sourceImg = cv::imread(sourceFileName,0);
+	//cv::cvtColor(sourceImg, sourceImg, CV_BGR2GRAY);
+	std::cout << "row:"<< sourceImg.rows << std::endl;
+	std::cout << "col:"<<sourceImg.cols << std::endl;
+
 	cv::imwrite("grayscale.jpg", sourceImg);
 }
 
@@ -65,9 +67,10 @@ void ImageClass::extractClock()
 	std::vector<cv::Vec3f> circles;
 	
 	/// Apply the Hough Transform to find the circles
-	cv::HoughCircles(sourceImg, circles, CV_HOUGH_GRADIENT, 1, sourceImg.rows / 8, 
-				200, 100, cvRound(MIN(sourceImg.size().height, sourceImg.size().width)*0.1), 
-				cvRound(MAX(sourceImg.size().height, sourceImg.size().width)*0.5));
+	cv::HoughCircles(sourceImg, circles, CV_HOUGH_GRADIENT, 1, sourceImg.rows / 8,
+		200, 100, 0, 0);
+		//cvRound(MIN(sourceImg.size().height, sourceImg.size().width)*0.1), 
+			//	cvRound(MAX(sourceImg.size().height, sourceImg.size().width)*0.5));
 	
 
 	//index can't be -1
@@ -121,7 +124,7 @@ void ImageClass::extractClock()
 	//cv::cvtColor(clockImg, sourceImg, CV_BGR2GRAY);
 
 	//sourceImg = clockImg.clone();
-	cv::Canny(sourceImg, sourceImg, 50, 100);
+	cv::Canny(sourceImg, sourceImg, 50, 30);
 	cv::imwrite("cannyImage.jpg", sourceImg);
 
 	// do houghline transform

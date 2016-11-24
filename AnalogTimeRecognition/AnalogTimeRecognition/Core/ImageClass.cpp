@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <cmath>
 #include "ImageClass.h"
 #include "HoughTransform.h"
 #include <opencv2\imgcodecs.hpp>
@@ -7,7 +8,6 @@
 
 using namespace Core;
 
-using namespace std;
 ImageClass::ImageClass()
 {
 	sourceFileName = "clock.jpg";
@@ -28,13 +28,19 @@ ImageClass& ImageClass::GetInstance()
 void ImageClass::readImage()
 {
 	// read the image file
-
+	
 	sourceImg = cv::imread(sourceFileName,0);
 	//cv::cvtColor(sourceImg, sourceImg, CV_BGR2GRAY);
 	std::cout << "row:"<< sourceImg.rows << std::endl;
 	std::cout << "col:"<<sourceImg.cols << std::endl;
-
-	cv::imwrite("grayscale.jpg", sourceImg);
+	if (!sourceImg.data)                              // Check for invalid input
+	{
+		std::cout << "file not found" << std::endl;
+	}
+	else
+	{
+		cv::imwrite("grayscale.jpg", sourceImg);
+	}
 }
 
 void ImageClass::extractClock()
@@ -47,7 +53,8 @@ void ImageClass::extractClock()
 	if (height > 800 || width > 1000) 
 	{
 		cv::resize(sourceImg, sourceImg, cv::Size(1000, 800));
-		cv::cvtColor(sourceImg, sourceImg, CV_BGR2GRAY);
+		//duplicate with the one above
+		//cv::cvtColor(sourceImg, sourceImg, CV_BGR2GRAY);
 
 		// resize if needed using cv::resize
 		//cv::imwrite("resizedImage.jpg", sourceImg);
@@ -62,15 +69,16 @@ void ImageClass::extractClock()
 
 	//the third parameter of GaussianBlur is the window size of a Gaussian filter
 	//both height and width must be positive and odd.
-	cv::GaussianBlur(sourceImg, sourceImg, cv::Size(9, 9), 2, 2);
+	cv::GaussianBlur(this->sourceImg, this->sourceImg, cv::Size(9, 9), 2, 2);
 	
 	std::vector<cv::Vec3f> circles;
 	
 	/// Apply the Hough Transform to find the circles
-	cv::HoughCircles(sourceImg, circles, CV_HOUGH_GRADIENT, 1, sourceImg.rows / 8,
-		200, 100, 0, 0);
-		//cvRound(MIN(sourceImg.size().height, sourceImg.size().width)*0.1), 
-			//	cvRound(MAX(sourceImg.size().height, sourceImg.size().width)*0.5));
+
+	cv::HoughCircles(this->sourceImg, circles, CV_HOUGH_GRADIENT, 1, sourceImg.rows / 8,
+		200, 100, //0, 0);
+		cvRound(MIN(sourceImg.size().height, sourceImg.size().width)*0.1), 
+				cvRound(MAX(sourceImg.size().height, sourceImg.size().width)*0.5));
 	
 
 	//index can't be -1
@@ -225,7 +233,11 @@ void ImageClass::extractClock()
 			selectedAngles.push_back(lineAngles[i]);
 		}
 	}
-	if(lineAngles[lineAngles.size() - 1] - lineAngles[lineAngles.size() - 2] > degOffset)
+	if (lineAngles.size() < 2)
+	{
+		std::cout << "error with line Angles" << std::endl;
+	}
+	else if(lineAngles[lineAngles.size() - 1] - lineAngles[lineAngles.size() - 2] > degOffset)
 	{
 		selectedLines.push_back(handLines[lineAngles.size() - 1]);
 		selectedAngles.push_back(lineAngles[lineAngles.size() - 1]);
@@ -251,23 +263,110 @@ void ImageClass::extractClock()
 			j--;
 		}
 	}
-
+	cv::Mat handLinesImg(sourceImg.rows, sourceImg.cols, CV_8UC3, cv::Scalar(0, 0, 0));
 	for (size_t i = 0; i < selectedLines.size(); i++)
 	{
 		cv::Point pt1(selectedLines[i][0], selectedLines[i][1]), pt2(selectedLines[i][2], selectedLines[i][3]);
-		cv::line(sourceImg, pt1, pt2, cv::Scalar(i == 0 ? 255 : 0, i == 1 ? 255 : 0, i > 1 ? 255 : 0), 3, CV_AA);
+		cv::line(handLinesImg, pt1, pt2, cv::Scalar(i == 0 ? 255 : 0, i == 1 ? 255 : 0, i > 1 ? 255 : 0), 3, CV_AA);
+		//cv::line(sourceImg, pt1, pt2, cv::Scalar(i == 0 ? 255 : 0, i == 1 ? 255 : 0, i > 1 ? 255 : 0), 3, CV_AA);
 	}
+	cv::imwrite("HandLines.jpg", handLinesImg);
 
-	cv::imwrite("HandLines.jpg", sourceImg);
+	//cv::imwrite("HandLines.jpg", sourceImg);
 
+	//longest one is second, middle one is min, shortest one is hour
 	// if one line, assume second, hour and minute are same
 	// if 2 lines, then 2 of them are same
 	// if 3 lines easy case
-	if (selectedLines.size() > 2)
+	if (selectedLines.size() == 1)
 	{
-
+		int h = getHour(selectedAngles[0]);
+		int m = getMinSec(selectedAngles[0]);	
 	}
-
+	else if (selectedLines.size() == 2)
+	{
+		cv::Point pt1(selectedLines[0][0], selectedLines[0][1]), pt2(selectedLines[0][2], selectedLines[0][3]);
+		cv::Point pt3(selectedLines[1][0], selectedLines[1][1]), pt4(selectedLines[1][2], selectedLines[1][3]);
+		double length1 = euclideanDist(pt1, pt2);
+		double length2 = euclideanDist(pt3, pt4);
+		std::cout << "l1:" << length1 << ",l2:" << length2 << std::endl;
+		if (length1 > length2)
+		{
+			//0 is minutes,1 is hours
+			std::cout << "c1";
+			this->hour = getHour(selectedAngles[1]);
+			this->minute = getMinSec(selectedAngles[0]);
+		}
+		else if (length1 < length2)
+		{
+			//1 is minutes,0 is hours
+			std::cout << "c2";
+			this->hour = getHour(selectedAngles[0]);
+			this->minute = getMinSec(selectedAngles[1]);
+		}
+		else
+		{
+			//i don't know which one is hour or minutes
+			//guess 0 is minutes,1 is hours
+			this->hour = getHour(selectedAngles[1]);
+			this->minute = getMinSec(selectedAngles[0]);
+		}
+	}
+	else if (selectedLines.size() == 3)
+	{
+		std::cout << "r:" << selectedAngles[2] << std::endl;
+		std::cout << "g:" << selectedAngles[1] << std::endl;
+		std::cout << "b:" << selectedAngles[0] << std::endl;
+		cv::Point pt1(selectedLines[0][0], selectedLines[0][1]), pt2(selectedLines[0][2], selectedLines[0][3]);
+		cv::Point pt3(selectedLines[1][0], selectedLines[1][1]), pt4(selectedLines[1][2], selectedLines[1][3]);
+		cv::Point pt5(selectedLines[2][0], selectedLines[2][1]), pt6(selectedLines[2][2], selectedLines[2][3]);
+		double length_b = euclideanDist(pt1, pt2);
+		double length_g = euclideanDist(pt3, pt4);
+		double length_r = euclideanDist(pt5, pt6);
+		//b:g:r
+		if (length_b < length_g&&length_g < length_r)
+		{
+			this->hour = getHour(selectedAngles[0]);
+			this->minute = getMinSec(selectedAngles[1]);
+			this->second = getMinSec(selectedAngles[2]);
+		}
+		//r:g:b
+		else if (length_r < length_g&&length_g < length_b)
+		{
+			this->hour = getHour(selectedAngles[2]);
+			this->minute = getMinSec(selectedAngles[1]);
+			this->second = getMinSec(selectedAngles[0]);
+		}
+		//g:b:r
+		else if (length_g < length_b && length_b < length_r)
+		{
+			this->hour = getHour(selectedAngles[1]);
+			this->minute = getMinSec(selectedAngles[0]);
+			this->second = getMinSec(selectedAngles[2]);
+		}
+		//r:b:g
+		else if (length_r < length_b && length_b < length_g )
+		{
+			this->hour = getHour(selectedAngles[2]);
+			this->minute = getMinSec(selectedAngles[0]);
+			this->second = getMinSec(selectedAngles[1]);
+		}
+		//b:r:g
+		else if (length_b < length_r && length_r < length_g)
+		{
+			this->hour = getHour(selectedAngles[0]);
+			this->minute = getMinSec(selectedAngles[2]);
+			this->second = getMinSec(selectedAngles[1]);
+		}
+		//g:r:b
+		else if (length_g < length_r && length_r < length_b)
+		{
+			this->hour = getHour(selectedAngles[1]);
+			this->minute = getMinSec(selectedAngles[2]);
+			this->second = getMinSec(selectedAngles[0]);
+		}
+	}
+	printTime();
 }
 
 double ImageClass::euclideanDist(cv::Point2d p, cv::Point2d q)
@@ -277,3 +376,21 @@ double ImageClass::euclideanDist(cv::Point2d p, cv::Point2d q)
 	return cv::sqrt(diff.x*diff.x + diff.y*diff.y);
 }
 
+int ImageClass::getHour(double selectedAngle)
+{
+	int h1 = (static_cast<int>(selectedAngle + 180)) % 360;
+	int h = 12 - ceil(static_cast<double>(h1) / 30);
+	return h;
+}
+
+int ImageClass::getMinSec(double selectedAngle)
+{
+	int m1 = (static_cast<int>(selectedAngle + 180)) % 360;
+	int m = 60 - static_cast<double>(m1) / 6;
+	return m;
+}
+
+void ImageClass::printTime()
+{
+	std::cout <<"The time is "<< this->hour << ":" << this->minute << ":" << this->second << std::endl;
+}

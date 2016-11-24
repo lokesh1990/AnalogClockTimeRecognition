@@ -6,6 +6,10 @@ namespace Core
 {
 	class ImageClass
 	{
+	private:
+		int hour;
+		int minute;
+		int second;
 	protected:
 		ImageClass();
 		~ImageClass();
@@ -15,10 +19,11 @@ namespace Core
 
 		void readImage();
 		double euclideanDist(cv::Point2d p, cv::Point2d q);
-
+		int getHour(double);
+		int getMinSec(double);
 	public:
 		static ImageClass& GetInstance();
-		
 		void extractClock();
+		void printTime();
 	};
 }

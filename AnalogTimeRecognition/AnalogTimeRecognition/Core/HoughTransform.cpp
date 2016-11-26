@@ -20,7 +20,7 @@ HoughTransform& HoughTransform::GetInstance()
 	return m_inst;
 }
 //change the return value from vector<Vec4i> to vector<Vec4f> to use 0.001 on imageclass
-std::vector<cv::Vec4d> Core::HoughTransform::ComputeHough(cv::Mat ipImg, cv::Point center)
+std::vector<cv::Vec4d> Core::HoughTransform::ComputeHough(cv::Mat ipImg, cv::Point2d &center)
 {
 	// find the hand lines 
 
@@ -30,11 +30,12 @@ std::vector<cv::Vec4d> Core::HoughTransform::ComputeHough(cv::Mat ipImg, cv::Poi
 	std::vector<cv::Vec4d> lines;
 	// detect lines
 	//cv::HoughLines(ipImg, lines, 1, CV_PI / 180, 100); // 150);
-	int minLineLength = 30;
-	int maxLineGap = 10;
+	
+	int minLineLength = 50;
+	int maxLineGap = 50;
 
 	//there is the problem in some cases with clocks because the line size = 0.
-	cv::HoughLinesP(ipImg, lines, 1, CV_PI / 180, 80, minLineLength, maxLineGap); // 100, 100, 10
+	cv::HoughLinesP(ipImg, lines, 1, CV_PI / 180, 60, minLineLength, maxLineGap); // 100, 100, 10
 
 	//create new mat with the same size as ipImg and black background
 	cv::Mat allLineImg(ipImg.rows, ipImg.cols, CV_8UC3, cv::Scalar(0, 0, 0));
@@ -57,6 +58,8 @@ std::vector<cv::Vec4d> Core::HoughTransform::ComputeHough(cv::Mat ipImg, cv::Poi
 		cv::line(allLineImg, pt1, pt2, cv::Scalar(255, 255, 255), 1, CV_AA);
 	}
 
+	cv::circle(allLineImg, center, 3, cv::Scalar(0, 255, 0), -1, 8, 0);// circle center     
+
 	cv::imwrite("allLines.jpg", allLineImg);
 	std::vector<cv::Vec4d> handLines;
 
@@ -69,7 +72,7 @@ std::vector<cv::Vec4d> Core::HoughTransform::ComputeHough(cv::Mat ipImg, cv::Poi
 	return lines;
 }
 
-bool Core::HoughTransform::CheckCenterOnLine(cv::Vec4i line, cv::Point center)
+bool Core::HoughTransform::CheckCenterOnLine(cv::Vec4i line, cv::Point2d center)
 {
 	double slope;
 	slope = (1.0 * (line[1] - line[3])) / (line[0] - line[2]);

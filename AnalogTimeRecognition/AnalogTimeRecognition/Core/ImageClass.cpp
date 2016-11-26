@@ -83,23 +83,30 @@ void ImageClass::extractClock()
 
 	//index can't be -1
 	int largestCircle = 0;
-	cv::Mat imgCircles;
-	sourceImg.copyTo(imgCircles);
+	cv::Mat imgCircles(sourceImg.rows, sourceImg.cols, CV_8UC3, cv::Scalar(0, 0, 0));
+
+	//sourceImg.copyTo(imgCircles);
+
 	//x and y of point are int so to make it more accurate with point2d
 	cv::Point2d clockCenter;
-
+	if (circles.size() > 0)
+	{
+		clockCenter.x = cvRound(circles[0][0]);
+		clockCenter.y = cvRound(circles[0][1]);
+	}
 	// Draw the circles detected
 	for (size_t i = 0; i < circles.size(); i++)
 	{
 		cv::Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
 		int radius = cvRound(circles[i][2]);
-
+	
 		// find the largest circle
 		// TODO remove this? probably select all circles
 		if (circles[largestCircle][2] < radius)
 		{
 			largestCircle = static_cast<int>(i);
-			clockCenter = center;
+			clockCenter.x = center.x;
+			clockCenter.y = center.y;
 		}
 		
 		cv::circle(imgCircles, center, 3, cv::Scalar(0, 255, 0), -1, 8, 0);// circle center     
@@ -123,6 +130,8 @@ void ImageClass::extractClock()
 	sourceImg.copyTo(clockImg, mask); // copy values of img to dst if mask is > 0.
 
 	cv::imwrite("clockImage.jpg", clockImg);
+	cv::imwrite("maskImage.jpg", mask);
+	cv::imwrite("sourceImage.jpg", sourceImg);
 
 	// perfrom canny edge detection
 	// for finding the lines in the circle
@@ -130,6 +139,11 @@ void ImageClass::extractClock()
 	//comment the error because your clockimage should have 3 or 4 channels before applying the function cv2.cvtColor
 	//actually you don't need to convert because it is already grayscale
 	//cv::cvtColor(clockImg, sourceImg, CV_BGR2GRAY);
+	//***check here
+	clockImg.copyTo(sourceImg);
+
+	// test code
+	cv::blur(sourceImg, sourceImg, cv::Size(5,5));
 
 	//sourceImg = clockImg.clone();
 	cv::Canny(sourceImg, sourceImg, 50, 30);
@@ -197,6 +211,8 @@ void ImageClass::extractClock()
 
 	}
 
+
+
 	
 	// all lines with a degree offset less than 5 should be merged.
 	int degOffset = 5;
@@ -204,6 +220,7 @@ void ImageClass::extractClock()
 
 	for (int i = 0; i < handLines.size(); i++)
 	{
+
 		// do sorting here
 		int j = i;
 		while (j > 0 && lineAngles[j - 1] > lineAngles[j])
@@ -222,17 +239,57 @@ void ImageClass::extractClock()
 
 	std::vector<cv::Vec4i> selectedLines;
 	std::vector<double> selectedAngles;
-
+	
+	//find 3 selectedLines
 	for (int i = 0; i < lineAngles.size()-1; i++)
 	{
+
 		// need to check here. I am discarding lines which has angle offset 
 		// less than the threshold value
+
+		//the problem is when you got i+1 360 and i is 5.
+		//index of the upper bound
+		
+		int value=0;
+		int in;
+		for (int j = i+1; j < lineAngles.size(); j++)
+		{
+			if (lineAngles[j] - lineAngles[i] > degOffset)
+			{
+				value = j-1;
+				break;
+			}
+			else if (j==lineAngles.size()-1)
+			{
+				value = j;
+				break;
+			}
+		}
+		in = value;
+		if(value==i)
+		{
+			selectedLines.push_back(handLines[value]);
+			selectedAngles.push_back(lineAngles[value]);
+		}
+		else if(value!=0)
+		{
+			value = i+round((value - i)/2);
+			selectedLines.push_back(handLines[value]);
+			selectedAngles.push_back(lineAngles[value]);
+		}
+		i = in;
+		
+		/*
 		if (lineAngles[i + 1] - lineAngles[i] > degOffset)
 		{
 			selectedLines.push_back(handLines[i]);
 			selectedAngles.push_back(lineAngles[i]);
+			
 		}
+		*/
+		
 	}
+	
 	if (lineAngles.size() < 2)
 	{
 		std::cout << "error with line Angles" << std::endl;
@@ -263,6 +320,14 @@ void ImageClass::extractClock()
 			j--;
 		}
 	}
+	//if more than 3 lines
+	while (selectedLines.size() > 3)
+	{
+		selectedLines.pop_back();
+	}
+
+
+	
 	cv::Mat handLinesImg(sourceImg.rows, sourceImg.cols, CV_8UC3, cv::Scalar(0, 0, 0));
 	for (size_t i = 0; i < selectedLines.size(); i++)
 	{
@@ -312,17 +377,65 @@ void ImageClass::extractClock()
 			this->minute = getMinSec(selectedAngles[0]);
 		}
 	}
-	else if (selectedLines.size() == 3)
+	else if (selectedLines.size() >= 3)
 	{
-		std::cout << "r:" << selectedAngles[2] << std::endl;
-		std::cout << "g:" << selectedAngles[1] << std::endl;
 		std::cout << "b:" << selectedAngles[0] << std::endl;
+		std::cout << "g:" << selectedAngles[1] << std::endl;
+		std::cout << "r:" << selectedAngles[2] << std::endl;
 		cv::Point pt1(selectedLines[0][0], selectedLines[0][1]), pt2(selectedLines[0][2], selectedLines[0][3]);
 		cv::Point pt3(selectedLines[1][0], selectedLines[1][1]), pt4(selectedLines[1][2], selectedLines[1][3]);
 		cv::Point pt5(selectedLines[2][0], selectedLines[2][1]), pt6(selectedLines[2][2], selectedLines[2][3]);
 		double length_b = euclideanDist(pt1, pt2);
 		double length_g = euclideanDist(pt3, pt4);
 		double length_r = euclideanDist(pt5, pt6);
+		std::cout << "_b:" << length_b << std::endl;
+		std::cout << "_g:" << length_g << std::endl;
+		std::cout << "_r:" << length_r << std::endl;
+
+		//b:g:r
+		if (length_b < length_g&&length_g < length_r)
+		{
+			this->hour = getHour(selectedAngles[0]);
+			this->second = getMinSec(selectedAngles[1]);
+			this->minute = getMinSec(selectedAngles[2]);
+		}
+		//r:g:b
+		else if (length_r < length_g&&length_g < length_b)
+		{
+			this->hour = getHour(selectedAngles[2]);
+			this->second = getMinSec(selectedAngles[1]);
+			this->minute = getMinSec(selectedAngles[0]);
+		}
+		//g:b:r
+		else if (length_g < length_b && length_b < length_r)
+		{
+			this->hour = getHour(selectedAngles[1]);
+			this->second = getMinSec(selectedAngles[0]);
+			this->minute = getMinSec(selectedAngles[2]);
+		}
+		//r:b:g
+		else if (length_r < length_b && length_b < length_g)
+		{
+			this->hour = getHour(selectedAngles[2]);
+			this->second = getMinSec(selectedAngles[0]);
+			this->minute = getMinSec(selectedAngles[1]);
+		}
+		//b:r:g
+		else if (length_b < length_r && length_r < length_g)
+		{
+			this->hour = getHour(selectedAngles[0]);
+			this->second = getMinSec(selectedAngles[2]);
+			this->minute = getMinSec(selectedAngles[1]);
+		}
+		//g:r:b
+		else if (length_g < length_r && length_r < length_b)
+		{
+			this->hour = getHour(selectedAngles[1]);
+			this->second = getMinSec(selectedAngles[2]);
+			this->minute = getMinSec(selectedAngles[0]);
+		}
+		/*
+		//commented for test
 		//b:g:r
 		if (length_b < length_g&&length_g < length_r)
 		{
@@ -365,6 +478,7 @@ void ImageClass::extractClock()
 			this->minute = getMinSec(selectedAngles[2]);
 			this->second = getMinSec(selectedAngles[0]);
 		}
+		*/
 	}
 	printTime();
 }
@@ -373,7 +487,8 @@ double ImageClass::euclideanDist(cv::Point2d p, cv::Point2d q)
 {
 	// computes the euclidean distance between 2 points
 	cv::Point2d diff = p - q;
-	return cv::sqrt(diff.x*diff.x + diff.y*diff.y);
+	double val = cv::sqrt(diff.x*diff.x + diff.y*diff.y);
+	return val;
 }
 
 int ImageClass::getHour(double selectedAngle)
@@ -392,5 +507,5 @@ int ImageClass::getMinSec(double selectedAngle)
 
 void ImageClass::printTime()
 {
-	std::cout <<"The time is "<< this->hour << ":" << this->minute << ":" << this->second << std::endl;
+	std::cout <<"The time is "<< this->hour << " o'clock, " << this->minute << " minutes, " << this->second <<" seconds"<< std::endl;
 }

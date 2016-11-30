@@ -63,6 +63,10 @@ int main(int argc, char** argv)
 
 	cv::Mat src, src_gray;
 	Core::ImageClass &im = Core::ImageClass::GetInstance();
+	std::string line;
+	std::cout << "Put the time image file to see the time :";
+	std::cin >> line;
+	im.setFileName(line);
 	im.extractClock();
 	cv::waitKey(0);
 	return 0;

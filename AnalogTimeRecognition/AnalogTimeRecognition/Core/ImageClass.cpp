@@ -10,12 +10,16 @@ using namespace Core;
 
 ImageClass::ImageClass()
 {
-	sourceFileName = "clock.jpg";
-	readImage();
 }
 
 ImageClass::~ImageClass()
 {
+}
+
+void ImageClass::setFileName(std::string filename)
+{
+	sourceFileName = filename;
+	readImage();
 }
 
 ImageClass& ImageClass::GetInstance()
@@ -39,7 +43,8 @@ void ImageClass::readImage()
 	}
 	else
 	{
-		cv::imwrite("grayscale.jpg", sourceImg);
+
+		cv::imwrite(sourceFileName.substr(0, sourceFileName.size() - 4) + "_grayscale.jpg", sourceImg);
 	}
 }
 
@@ -116,7 +121,7 @@ void ImageClass::extractClock()
 	}
 
 	// Show your results
-	cv::imwrite("allCirclesImage.jpg", imgCircles);
+	cv::imwrite(sourceFileName.substr(0, sourceFileName.size() - 4) +"_allCirclesImage.jpg", imgCircles);
 
 	if (largestCircle == -1)
 		return;	//	no circle found
@@ -129,9 +134,8 @@ void ImageClass::extractClock()
 		cvRound(circles[largestCircle][2]), cv::Scalar(255, 255, 255), -1, 8, 0); //-1 means filled
 	sourceImg.copyTo(clockImg, mask); // copy values of img to dst if mask is > 0.
 
-	cv::imwrite("clockImage.jpg", clockImg);
-	cv::imwrite("maskImage.jpg", mask);
-	cv::imwrite("sourceImage.jpg", sourceImg);
+	cv::imwrite(sourceFileName.substr(0, sourceFileName.size() - 4) +"_blurImage.jpg", clockImg);
+	cv::imwrite(sourceFileName.substr(0, sourceFileName.size() - 4) +"_maskImage.jpg", mask);
 
 	// perfrom canny edge detection
 	// for finding the lines in the circle
@@ -147,8 +151,8 @@ void ImageClass::extractClock()
 
 	//sourceImg = clockImg.clone();
 	cv::Canny(sourceImg, sourceImg, 50, 30);
-	cv::imwrite("cannyImage.jpg", sourceImg);
-
+	cv::imwrite(sourceFileName.substr(0, sourceFileName.size() - 4) +"_cannyImage.jpg", sourceImg);
+	
 	// do houghline transform
 
 	// get the lines from the houghtransform class
@@ -157,8 +161,21 @@ void ImageClass::extractClock()
 	//add call houghtransform
 	Core::HoughTransform &ht = Core::HoughTransform::GetInstance();
 	//---change Vec4i to Vec4d--- to use 0.001 on line 155,157
-	std::vector<cv::Vec4d> handLines = ht.ComputeHough(sourceImg, clockCenter);
+	std::vector<cv::Vec4d> handLines = ht.ComputeHough(sourceImg, clockCenter, sourceFileName);
 	//end houghtransform
+
+
+	//testing fn
+	cv::Mat handLinesImg2(sourceImg.rows, sourceImg.cols, CV_8UC3, cv::Scalar(0, 0, 0));
+	for (size_t i = 0; i < handLines.size(); i++)
+	{
+		cv::Point pt1(handLines[i][0], handLines[i][1]), pt2(handLines[i][2], handLines[i][3]);
+		cv::line(handLinesImg2, pt1, pt2, cv::Scalar(i == 0 ? 255 : 0, i == 1 ? 255 : 0, i > 1 ? 255 : 0), 3, CV_AA);
+		//cv::line(sourceImg, pt1, pt2, cv::Scalar(i == 0 ? 255 : 0, i == 1 ? 255 : 0, i > 1 ? 255 : 0), 3, CV_AA);
+	}
+	cv::imwrite(sourceFileName.substr(0, sourceFileName.size() - 4) + "_handLines2.jpg", handLinesImg2);
+	//testing fn end
+
 
 	//add the initial size of lineAngles = handLines.size()
 	std::vector<double> lineAngles(handLines.size());
@@ -210,9 +227,6 @@ void ImageClass::extractClock()
 		}
 
 	}
-
-
-
 	
 	// all lines with a degree offset less than 5 should be merged.
 	int degOffset = 5;
@@ -273,7 +287,7 @@ void ImageClass::extractClock()
 		}
 		else if(value!=0)
 		{
-			value = i+round((value - i)/2);
+			value = i+static_cast<int>(round((value - i)/2));
 			selectedLines.push_back(handLines[value]);
 			selectedAngles.push_back(lineAngles[value]);
 		}
@@ -316,7 +330,6 @@ void ImageClass::extractClock()
 			diffX = selectedAngles[j];
 			selectedAngles[j] = selectedAngles[j - 1];
 			selectedAngles[j - 1] = diffX;
-
 			j--;
 		}
 	}
@@ -326,8 +339,6 @@ void ImageClass::extractClock()
 		selectedLines.pop_back();
 	}
 
-
-	
 	cv::Mat handLinesImg(sourceImg.rows, sourceImg.cols, CV_8UC3, cv::Scalar(0, 0, 0));
 	for (size_t i = 0; i < selectedLines.size(); i++)
 	{
@@ -335,7 +346,7 @@ void ImageClass::extractClock()
 		cv::line(handLinesImg, pt1, pt2, cv::Scalar(i == 0 ? 255 : 0, i == 1 ? 255 : 0, i > 1 ? 255 : 0), 3, CV_AA);
 		//cv::line(sourceImg, pt1, pt2, cv::Scalar(i == 0 ? 255 : 0, i == 1 ? 255 : 0, i > 1 ? 255 : 0), 3, CV_AA);
 	}
-	cv::imwrite("HandLines.jpg", handLinesImg);
+	cv::imwrite(sourceFileName.substr(0, sourceFileName.size() - 4)+"_handLines.jpg", handLinesImg);
 
 	//cv::imwrite("HandLines.jpg", sourceImg);
 
@@ -354,18 +365,22 @@ void ImageClass::extractClock()
 		cv::Point pt3(selectedLines[1][0], selectedLines[1][1]), pt4(selectedLines[1][2], selectedLines[1][3]);
 		double length1 = euclideanDist(pt1, pt2);
 		double length2 = euclideanDist(pt3, pt4);
-		std::cout << "l1:" << length1 << ",l2:" << length2 << std::endl;
+
+		std::cout << "blue length :" << length1 << std::endl;
+		std::cout << "green length:" << length2 << std::endl;
+
+		std::cout << "blue degree  :" << selectedAngles[0] << std::endl;
+		std::cout << "green degree :" << selectedAngles[1] << std::endl;
+
 		if (length1 > length2)
 		{
 			//0 is minutes,1 is hours
-			std::cout << "c1";
 			this->hour = getHour(selectedAngles[1]);
 			this->minute = getMinSec(selectedAngles[0]);
 		}
 		else if (length1 < length2)
 		{
 			//1 is minutes,0 is hours
-			std::cout << "c2";
 			this->hour = getHour(selectedAngles[0]);
 			this->minute = getMinSec(selectedAngles[1]);
 		}
@@ -379,18 +394,18 @@ void ImageClass::extractClock()
 	}
 	else if (selectedLines.size() >= 3)
 	{
-		std::cout << "b:" << selectedAngles[0] << std::endl;
-		std::cout << "g:" << selectedAngles[1] << std::endl;
-		std::cout << "r:" << selectedAngles[2] << std::endl;
+		std::cout << "blue degree  :" << selectedAngles[0] << std::endl;
+		std::cout << "green degree :" << selectedAngles[1] << std::endl;
+		std::cout << "red degree   :" << selectedAngles[2] << std::endl;
 		cv::Point pt1(selectedLines[0][0], selectedLines[0][1]), pt2(selectedLines[0][2], selectedLines[0][3]);
 		cv::Point pt3(selectedLines[1][0], selectedLines[1][1]), pt4(selectedLines[1][2], selectedLines[1][3]);
 		cv::Point pt5(selectedLines[2][0], selectedLines[2][1]), pt6(selectedLines[2][2], selectedLines[2][3]);
 		double length_b = euclideanDist(pt1, pt2);
 		double length_g = euclideanDist(pt3, pt4);
 		double length_r = euclideanDist(pt5, pt6);
-		std::cout << "_b:" << length_b << std::endl;
-		std::cout << "_g:" << length_g << std::endl;
-		std::cout << "_r:" << length_r << std::endl;
+		std::cout << "blue length :" << length_b << std::endl;
+		std::cout << "green length:" << length_g << std::endl;
+		std::cout << "red length  :" << length_r << std::endl;
 
 		//b:g:r
 		if (length_b < length_g&&length_g < length_r)
@@ -494,18 +509,18 @@ double ImageClass::euclideanDist(cv::Point2d p, cv::Point2d q)
 int ImageClass::getHour(double selectedAngle)
 {
 	int h1 = (static_cast<int>(selectedAngle + 180)) % 360;
-	int h = 12 - ceil(static_cast<double>(h1) / 30);
+	int h = 12 - static_cast<int>(ceil(static_cast<double>(h1) / 30));
 	return h;
 }
 
 int ImageClass::getMinSec(double selectedAngle)
 {
 	int m1 = (static_cast<int>(selectedAngle + 180)) % 360;
-	int m = 60 - static_cast<double>(m1) / 6;
+	int m = 60 - static_cast<int>(static_cast<double>(m1) / 6);
 	return m;
 }
 
 void ImageClass::printTime()
 {
-	std::cout <<"The time is "<< this->hour << " o'clock, " << this->minute << " minutes, " << this->second <<" seconds"<< std::endl;
+	std::cout <<"The image's time is (h:m:s) "<< this->hour << ":" << this->minute << ":" << this->second <<""<< std::endl;
 }

@@ -23,6 +23,7 @@ namespace Core
 		int getMinSec(double);
 	public:
 		static ImageClass& GetInstance();
+		void setFileName(std::string);
 		void extractClock();
 		void printTime();
 	};

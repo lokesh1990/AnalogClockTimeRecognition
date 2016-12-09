@@ -146,7 +146,6 @@ void ImageClass::extractClock()
 	//***check here
 	clockImg.copyTo(sourceImg);
 
-	// test code
 	cv::blur(sourceImg, sourceImg, cv::Size(5,5));
 
 	//sourceImg = clockImg.clone();
@@ -164,19 +163,7 @@ void ImageClass::extractClock()
 	std::vector<cv::Vec4d> handLines = ht.ComputeHough(sourceImg, clockCenter, sourceFileName);
 	//end houghtransform
 
-	/*
-	//testing fn
-	cv::Mat handLinesImg2(sourceImg.rows, sourceImg.cols, CV_8UC3, cv::Scalar(0, 0, 0));
-	for (size_t i = 0; i < handLines.size(); i++)
-	{
-		cv::Point pt1(handLines[i][0], handLines[i][1]), pt2(handLines[i][2], handLines[i][3]);
-		cv::line(handLinesImg2, pt1, pt2, cv::Scalar(i == 0 ? 255 : 0, i == 1 ? 255 : 0, i > 1 ? 255 : 0), 3, CV_AA);
-		//cv::line(sourceImg, pt1, pt2, cv::Scalar(i == 0 ? 255 : 0, i == 1 ? 255 : 0, i > 1 ? 255 : 0), 3, CV_AA);
-	}
-	cv::imwrite(sourceFileName.substr(0, sourceFileName.size() - 4) + "_handLines2.jpg", handLinesImg2);
-	//testing fn end
-	*/
-
+	
 	//add the initial size of lineAngles = handLines.size()
 	std::vector<double> lineAngles(handLines.size());
 	double diffX, diffY;
@@ -400,60 +387,7 @@ void ImageClass::extractClock()
 		double length_b = euclideanDist(pt1, pt2);
 		double length_g = euclideanDist(pt3, pt4);
 		double length_r = euclideanDist(pt5, pt6);
-		/*
-		std::cout << "blue degree  :" << selectedAngles[0] << std::endl;
-		std::cout << "green degree :" << selectedAngles[1] << std::endl;
-		std::cout << "red degree   :" << selectedAngles[2] << std::endl;
-
-		std::cout << "blue length :" << length_b << std::endl;
-		std::cout << "green length:" << length_g << std::endl;
-		std::cout << "red length  :" << length_r << std::endl;
-		*/
-		/*
-		//b:g:r
-		if (length_b < length_g&&length_g < length_r)
-		{
-			this->hour = getHour(selectedAngles[0]);
-			this->second = getMinSec(selectedAngles[1]);
-			this->minute = getMinSec(selectedAngles[2]);
-		}
-		//r:g:b
-		else if (length_r < length_g&&length_g < length_b)
-		{
-			this->hour = getHour(selectedAngles[2]);
-			this->second = getMinSec(selectedAngles[1]);
-			this->minute = getMinSec(selectedAngles[0]);
-		}
-		//g:b:r
-		else if (length_g < length_b && length_b < length_r)
-		{
-			this->hour = getHour(selectedAngles[1]);
-			this->second = getMinSec(selectedAngles[0]);
-			this->minute = getMinSec(selectedAngles[2]);
-		}
-		//r:b:g
-		else if (length_r < length_b && length_b < length_g)
-		{
-			this->hour = getHour(selectedAngles[2]);
-			this->second = getMinSec(selectedAngles[0]);
-			this->minute = getMinSec(selectedAngles[1]);
-		}
-		//b:r:g
-		else if (length_b < length_r && length_r < length_g)
-		{
-			this->hour = getHour(selectedAngles[0]);
-			this->second = getMinSec(selectedAngles[2]);
-			this->minute = getMinSec(selectedAngles[1]);
-		}
-		//g:r:b
-		else if (length_g < length_r && length_r < length_b)
-		{
-			this->hour = getHour(selectedAngles[1]);
-			this->second = getMinSec(selectedAngles[2]);
-			this->minute = getMinSec(selectedAngles[0]);
-		}
-		*/
-		//commented for test
+		
 		//b:g:r
 		if (length_b < length_g&&length_g < length_r)
 		{

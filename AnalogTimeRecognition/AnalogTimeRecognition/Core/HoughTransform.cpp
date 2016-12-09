@@ -31,10 +31,10 @@ std::vector<cv::Vec4d> Core::HoughTransform::ComputeHough(cv::Mat ipImg, cv::Poi
 	std::vector<cv::Vec4d> lines;
 	// detect lines
 	//cv::HoughLines(ipImg, lines, 1, CV_PI / 180, 100); // 150);
-	std::string n = sourceFileName.size()>5?sourceFileName.substr(5, 1):"";
+	//std::string n = sourceFileName.size()>5?sourceFileName.substr(5, 1):"";
 	
 	int minLineLength = 50;
-	int maxLineGap = n=="4"?12:n=="1"?40:17;
+	int maxLineGap = 17;
 	//there is the problem in some cases with clocks because the line size = 0.
 	cv::HoughLinesP(ipImg, lines, 1, CV_PI / 180, 60, minLineLength, maxLineGap); // 100, 100, 10
 	//create new mat with the same size as ipImg and black background
